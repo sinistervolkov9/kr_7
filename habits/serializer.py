@@ -15,10 +15,11 @@ class HabitSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
     def validate(self, data):
+
         # Проверка: нельзя указать одновременно и вознаграждение, и связанную привычку
         AssociatedWithoutRewardValidator()(data)
 
-        # Валидация времени выполнения: не более 120 минут
+        # Валидация времени выполнения: не более 120 секунд
         TimeToCompleteValidator()(data)
 
         # Связанная привычка должна быть только с приятной привычкой
