@@ -1,6 +1,13 @@
 from django.db import models
 from django.conf import settings
 from django.utils import timezone
+from .validators import (
+    AssociatedWithoutRewardValidator,
+    TimeToCompleteValidator,
+    RelatedHabitValidator,
+    NiceHabitRewardValidator,
+    PeriodicityValidator,
+)
 
 NULLABLE = {"blank": True, "null": True}
 PERIODICITY_CHOICES = (
@@ -73,10 +80,9 @@ class Habit(models.Model):
         verbose_name="Вознаграждение",
         **NULLABLE
     )
-    time_to_complete = models.TimeField(
-        auto_now=False,
-        auto_now_add=False,
-        verbose_name="Время на выполнение",
+    time_to_complete = models.PositiveIntegerField(
+        default=1,
+        verbose_name="Время на выполнение (в минутах)",
         **NULLABLE
     )
     is_published = models.BooleanField(
@@ -94,3 +100,17 @@ class Habit(models.Model):
     class Meta:
         verbose_name = "Привычка"
         verbose_name_plural = "Привычки"
+
+    def clean(self):
+        super().clean()
+
+        validators = [
+            AssociatedWithoutRewardValidator(),
+            TimeToCompleteValidator(),
+            RelatedHabitValidator(),
+            NiceHabitRewardValidator(),
+            PeriodicityValidator(),
+        ]
+
+        for validator in validators:
+            validator(self)
