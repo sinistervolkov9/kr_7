@@ -1,4 +1,4 @@
-from rest_framework import viewsets
+from rest_framework import viewsets, generics
 from .models import Habit
 from .serializer import HabitSerializer
 from .paginators import HabitPaginator
@@ -46,3 +46,10 @@ class HabitViewSet(viewsets.ModelViewSet):
         При создании привычки автоматически присваиваем её владельцу текущего пользователя.
         """
         serializer.save(user=self.request.user)
+
+
+class PublicHabitsListView(generics.ListAPIView):
+    queryset = Habit.objects.filter(is_published=True)
+    serializer_class = HabitSerializer
+    # permission_classes = [IsAuthenticatedOrReadOnly],
+    # pagination_class = HabitPaginator
