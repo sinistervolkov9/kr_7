@@ -22,6 +22,7 @@ class TimeToCompleteValidator:
             if habit.time_to_complete > 2:
                 raise ValidationError("Время на выполнение должно быть не больше 2 минут (120 секунд).")
 
+
 class RelatedHabitValidator:
     """
     В связанные привычки могут попадать только привычки с признаком приятной привычки.

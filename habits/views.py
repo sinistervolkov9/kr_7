@@ -1,3 +1,48 @@
-from django.shortcuts import render
+from rest_framework import viewsets
+from .models import Habit
+from .serializer import HabitSerializer
+from .paginators import HabitPaginator
+from .permission import IsOwnerOrReadOnly
+from rest_framework.permissions import IsAuthenticatedOrReadOnly
 
-# Create your views here.
+
+class HabitViewSet(viewsets.ModelViewSet):
+    queryset = Habit.objects.all()
+    serializer_class = HabitSerializer
+    pagination_class = HabitPaginator
+    permission_classes = [IsAuthenticatedOrReadOnly, IsOwnerOrReadOnly]
+
+    # def get_permissions(self):
+    #     if self.action in ['list']:
+    #         permission_classes = [IsAuthenticatedOrReadOnly]
+    #     elif self.action in ['retrieve']:
+    #         permission_classes = [IsAuthenticatedOrReadOnly, IsPaymet]
+    #     elif self.action in ['update', 'partial_update']:
+    #         permission_classes = [IsAuthenticated, IsModerOrAuthor]
+    #     elif self.action == 'destroy':
+    #         permission_classes = [IsAuthenticated, IsModerOrAuthor]
+    #     elif self.action == 'create':
+    #         permission_classes = [IsAuthenticated, IsModerOrAuthor]
+    #     else:
+    #         permission_classes = [IsAuthenticated]
+    #
+    #     return [permission() for permission in permission_classes]
+
+    def get_queryset(self):
+        """
+        Возвращает публичные привычки для всех пользователей и все привычки для их владельцев.
+        """
+        user = self.request.user
+
+        if user.is_authenticated:
+            # Если пользователь аутентифицирован, возвращаем его привычки и публичные
+            return Habit.objects.filter(user=user) | Habit.objects.filter(is_published=True)
+        else:
+            # Если пользователь не аутентифицирован, возвращаем только публичные привычки
+            return Habit.objects.filter(is_published=True)
+
+    def perform_create(self, serializer):
+        """
+        При создании привычки автоматически присваиваем её владельцу текущего пользователя.
+        """
+        serializer.save(user=self.request.user)
