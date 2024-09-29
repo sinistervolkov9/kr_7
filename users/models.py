@@ -16,9 +16,15 @@ class User(AbstractUser):
 
     verify_code = models.CharField(max_length=6, default=random_code, verbose_name='Код верификации')
 
+    telegram_chat_id = models.CharField(max_length=100, blank=True, null=True,
+                                        help_text="ID пользователя Telegram для отправки уведомлений")
+
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = []
 
     class Meta:
         verbose_name = 'Пользователь'
         verbose_name_plural = 'Пользователи'
+
+    def __str__(self):
+        return self.username
