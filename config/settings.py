@@ -202,9 +202,13 @@ CELERY_ENABLE_UTC = True
 CELERY_TIMEZONE = TIME_ZONE
 
 CELERY_BEAT_SCHEDULE = {
-    'telegram_notification': {
+    'habits-activator': {
+        'task': 'habits.tasks.habits_activator',
+        'schedule': 45.0,  # проверка, что пора активировать
+    },
+    'send-telegram_notification': {
         'task': 'habits.tasks.send_telegram_notification',
-        'schedule': timedelta(minutes=2),
+        'schedule': 60.0,  # проверка, что пора уведомлять
     },
 }
 

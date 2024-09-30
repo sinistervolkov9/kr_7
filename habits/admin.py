@@ -4,5 +4,5 @@ from habits.models import Habit
 
 @admin.register(Habit)
 class HabitAdmin(admin.ModelAdmin):
-    list_display = ('action', 'time', 'place', 'user',)
+    list_display = ('action', 'time', 'user', 'status',)
     list_filter = ('id',)

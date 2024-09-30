@@ -1,25 +1,86 @@
 import asyncio
+from aiogram.exceptions import TelegramForbiddenError
 from celery import shared_task
 from .models import Habit
 from habits.telegram import send_message
 from asgiref.sync import async_to_sync
 from config.celery import app
+from django.utils import timezone
+from datetime import datetime, timedelta
+from .models import PERIODICITY_TO_TIMDELTA
+
+
+@shared_task
+def habits_activator():
+    now = timezone.now()
+    habits = Habit.objects.filter(status='created')
+
+    print("habits_activator")
+
+    for habit in habits:
+        if habit.should_be_active():
+            habit.status = 'active'
+            habit.save()
+
+            print(f'Привычка {habit.action} активирована!')
+            # send_telegram_notification.delay(habit.user.id, f"Привычка {habit.action} активирована!")
+
 
 @app.task
 def send_telegram_notification():
-    print("Send")
+    now = timezone.localtime()
     habits = Habit.objects.filter(status='active', user__telegram_chat_id__isnull=False)
+
+    print(f'now = {now}')
 
     for habit in habits:
         user = habit.user
-        message = f"Напоминание! Ваша привычка {habit.action} ожидает выполнения!"
+        if habit.related_habit:
+            message = (f"Привет, {habit.user}! "
+                       f"Нужно выполнить '{habit.action}', "
+                       f"в месте '{habit.place}', "
+                       f"а за это ты можешь выполнить '{habit.related_habit}'!")
+        elif habit.reward:
+            message = (f"Привет, {habit.user}! "
+                       f"Нужно выполнить '{habit.action}', "
+                       f"в месте '{habit.place}', "
+                       f"а за это ты получишь награду '{habit.reward}'!")
+        else:
+            message = (f"Привет, {habit.user}! "
+                       f"Нужно выполнить '{habit.action}', "
+                       f"в месте '{habit.place}'!")
 
-        print(user)
-        print(message)
+        # Приводим время старта привычки к локальному времени
+        habit_start = timezone.make_aware(datetime.combine(habit.start_date, habit.time),
+                                          timezone.get_current_timezone())
+        print(f'habit_start = {habit_start} ({user})')
 
-        # Выполняем асинхронную функцию синхронно
-        async_to_sync(send_message)(user.telegram_chat_id, message)
+        # Приводим last_notification_time к локальной временной зоне или используем время старта
+        last_notification_time = timezone.localtime(
+            habit.last_notification_time) if habit.last_notification_time else habit_start
+        print(f'last_notification_time = {last_notification_time} ({user})')
 
+        # Получаем timedelta для периодичности
+        period = PERIODICITY_TO_TIMDELTA.get(habit.periodicity, timedelta())
+        print(f'period = {period} ({user})')
+
+        # Рассчитываем ближайшее следующее время уведомления
+        notification_time = last_notification_time
+        # Пока notification_time меньше текущего времени, увеличиваем его
+        while notification_time <= now:
+            notification_time += period
+        print(f'notification_time = {notification_time} ({user})')
+        print(f'??? = {notification_time - period}')
+
+        # Если текущее время больше или равно следующему уведомлению
+        if now >= notification_time - period:
+            try:
+                print(f'SEND {user} - {message}')
+                async_to_sync(send_message)(user.telegram_chat_id, message)
+                habit.last_notification_time = now
+                habit.save()
+            except TelegramForbiddenError:
+                print(f'Не удалось отправить сообщение пользователю {user} (TelegramForbiddenError)')
 
 # @shared_task
 # def send_telegram_notification():

@@ -7,9 +7,9 @@ random_code = ''.join(random.sample('0123456789', 6))
 
 
 class User(AbstractUser):
-    username = models.CharField(max_length=50, default='default_username', verbose_name='Имя пользователя')
+    username = models.CharField(max_length=50, default='default_username', verbose_name='Имя пользователя', **NULLABLE)
 
-    email = models.EmailField(unique=True, verbose_name='Почта')
+    email = models.EmailField(unique=True, verbose_name='Почта', **NULLABLE)
     phone = models.CharField(max_length=30, verbose_name='Телефон', **NULLABLE)
     city = models.CharField(max_length=30, verbose_name='Город', **NULLABLE)
     avatar = models.ImageField(upload_to='users/', default='default user.png', verbose_name="Аватар", **NULLABLE)
@@ -27,4 +27,4 @@ class User(AbstractUser):
         verbose_name_plural = 'Пользователи'
 
     def __str__(self):
-        return self.username
+        return self.username or 'Unnamed User'

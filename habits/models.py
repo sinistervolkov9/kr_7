@@ -1,9 +1,13 @@
 from django.db import models
 from django.conf import settings
 from django.utils import timezone
+from datetime import datetime, timedelta
 
 NULLABLE = {"blank": True, "null": True}
 PERIODICITY_CHOICES = (
+    ('1 min', 'Каждые 1 мин.'),
+    ('3 min', 'Каждые 3 мин.'),
+    # ('1 h', 'Каждый 1 час'),
     ('1', 'Каждый 1 день'),
     ('2', 'Каждые 2 дня'),
     ('3', 'Каждые 3 дня'),
@@ -12,6 +16,18 @@ PERIODICITY_CHOICES = (
     ('6', 'Каждые 6 дней'),
     ('7', 'Каждые 7 дней'),
 )
+PERIODICITY_TO_TIMDELTA = {
+    '1 min': timedelta(minutes=1),
+    '3 min': timedelta(minutes=3),
+    '1 h': timedelta(hours=1),
+    '1 day': timedelta(days=1),
+    '2 days': timedelta(days=2),
+    '3 days': timedelta(days=3),
+    '4 days': timedelta(days=4),
+    '5 days': timedelta(days=5),
+    '6 days': timedelta(days=6),
+    '7 days': timedelta(days=7),
+}
 STATUS_CHOICES = (
     ('created', 'Создана'),
     ('active', 'Активна'),
@@ -27,6 +43,7 @@ class Habit(models.Model):
         verbose_name='Пользователь'
     )
     place = models.CharField(
+        default='Где угодно',
         max_length=50,
         verbose_name="Место",
         help_text="Укажите место, в котором необходимо выполнять привычку",
@@ -89,7 +106,19 @@ class Habit(models.Model):
         verbose_name='Статус',
         choices=STATUS_CHOICES,
     )
+    last_notification_time = models.DateTimeField(
+        verbose_name='Время последнего уведомления',
+        **NULLABLE,
+    )
 
     class Meta:
         verbose_name = "Привычка"
         verbose_name_plural = "Привычки"
+
+    def __str__(self):
+        return self.action or 'Unnamed Habit'
+
+    def should_be_active(self):
+        now = timezone.now()
+        habit_start = timezone.make_aware(datetime.combine(self.start_date, self.time))
+        return now >= habit_start and self.status == 'created'
