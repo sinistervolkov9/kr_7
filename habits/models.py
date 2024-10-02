@@ -5,8 +5,8 @@ from datetime import datetime, timedelta
 
 NULLABLE = {"blank": True, "null": True}
 PERIODICITY_CHOICES = (
-    ('1 min', 'Каждые 1 мин.'),
-    ('3 min', 'Каждые 3 мин.'),
+    # ('1 min', 'Каждые 1 мин.'),
+    # ('3 min', 'Каждые 3 мин.'),
     ('1 day', 'Каждый 1 день'),
     ('2 days', 'Каждые 2 дня'),
     ('3 days', 'Каждые 3 дня'),
@@ -16,15 +16,15 @@ PERIODICITY_CHOICES = (
     ('7 days', 'Каждые 7 дней'),
 )
 PERIODICITY_TO_TIMDELTA = {
-    '1 min': timedelta(minutes=1),
-    '3 min': timedelta(minutes=3),
+    # '1 min': timedelta(minutes=1),
+    # '3 min': timedelta(minutes=3),
     '1 day': timedelta(minutes=1440),
-    '2 days': timedelta(days=2),
-    '3 days': timedelta(days=3),
-    '4 days': timedelta(days=4),
-    '5 days': timedelta(days=5),
-    '6 days': timedelta(days=6),
-    '7 days': timedelta(days=7),
+    '2 days': timedelta(minutes=2880),
+    '3 days': timedelta(minutes=4320),
+    '4 days': timedelta(minutes=5760),
+    '5 days': timedelta(minutes=7200),
+    '6 days': timedelta(minutes=8640),
+    '7 days': timedelta(minutes=10080),
 }
 STATUS_CHOICES = (
     ('created', 'Создана'),

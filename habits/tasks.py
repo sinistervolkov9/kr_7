@@ -61,7 +61,7 @@ def send_telegram_notification():
 
         # Получаем timedelta для периодичности
         period = PERIODICITY_TO_TIMDELTA.get(habit.periodicity, timedelta())
-        # print(f'({user}) period = {period}')
+        print(f'({user}) period = {period}')
 
         # Если уведомлений не было, используем habit_start для первого уведомления
         if not last_notification_time:
