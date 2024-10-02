@@ -7,20 +7,18 @@ NULLABLE = {"blank": True, "null": True}
 PERIODICITY_CHOICES = (
     ('1 min', 'Каждые 1 мин.'),
     ('3 min', 'Каждые 3 мин.'),
-    # ('1 h', 'Каждый 1 час'),
-    ('1', 'Каждый 1 день'),
-    ('2', 'Каждые 2 дня'),
-    ('3', 'Каждые 3 дня'),
-    ('4', 'Каждые 4 дня'),
-    ('5', 'Каждые 5 дней'),
-    ('6', 'Каждые 6 дней'),
-    ('7', 'Каждые 7 дней'),
+    ('1 day', 'Каждый 1 день'),
+    ('2 days', 'Каждые 2 дня'),
+    ('3 days', 'Каждые 3 дня'),
+    ('4 days', 'Каждые 4 дня'),
+    ('5 days', 'Каждые 5 дней'),
+    ('6 days', 'Каждые 6 дней'),
+    ('7 days', 'Каждые 7 дней'),
 )
 PERIODICITY_TO_TIMDELTA = {
     '1 min': timedelta(minutes=1),
     '3 min': timedelta(minutes=3),
-    '1 h': timedelta(hours=1),
-    '1 day': timedelta(days=1),
+    '1 day': timedelta(minutes=1440),
     '2 days': timedelta(days=2),
     '3 days': timedelta(days=3),
     '4 days': timedelta(days=4),
@@ -108,6 +106,10 @@ class Habit(models.Model):
     )
     last_notification_time = models.DateTimeField(
         verbose_name='Время последнего уведомления',
+        **NULLABLE,
+    )
+    next_notification_time = models.DateTimeField(
+        verbose_name='Время следующего уведомления',
         **NULLABLE,
     )
 

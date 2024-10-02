@@ -23,18 +23,18 @@ def habits_activator():
             habit.save()
 
             print(f'Привычка {habit.action} активирована!')
-            # send_telegram_notification.delay(habit.user.id, f"Привычка {habit.action} активирована!")
 
 
 @app.task
 def send_telegram_notification():
     now = timezone.localtime()
-    habits = Habit.objects.filter(status='active', user__telegram_chat_id__isnull=False)
+    # print(f'now = {now}')
 
-    print(f'now = {now}')
+    habits = Habit.objects.filter(status='active', user__telegram_chat_id__isnull=False)
 
     for habit in habits:
         user = habit.user
+
         if habit.related_habit:
             message = (f"Привет, {habit.user}! "
                        f"Нужно выполнить '{habit.action}', "
@@ -53,107 +53,100 @@ def send_telegram_notification():
         # Приводим время старта привычки к локальному времени
         habit_start = timezone.make_aware(datetime.combine(habit.start_date, habit.time),
                                           timezone.get_current_timezone())
-        print(f'habit_start = {habit_start} ({user})')
+        # print(f'({user}) habit_start = {habit_start}')
 
-        # Приводим last_notification_time к локальной временной зоне или используем время старта
+        # Приводим last_notification_time к локальной временной зоне или используем время старта для первого уведомления
         last_notification_time = timezone.localtime(
-            habit.last_notification_time) if habit.last_notification_time else habit_start
-        print(f'last_notification_time = {last_notification_time} ({user})')
+            habit.last_notification_time) if habit.last_notification_time else None
 
         # Получаем timedelta для периодичности
         period = PERIODICITY_TO_TIMDELTA.get(habit.periodicity, timedelta())
-        print(f'period = {period} ({user})')
+        # print(f'({user}) period = {period}')
 
-        # Рассчитываем ближайшее следующее время уведомления
-        notification_time = last_notification_time
-        # Пока notification_time меньше текущего времени, увеличиваем его
-        while notification_time <= now:
-            notification_time += period
-        print(f'notification_time = {notification_time} ({user})')
-        print(f'??? = {notification_time - period}')
+        # Если уведомлений не было, используем habit_start для первого уведомления
+        if not last_notification_time:
+            # print(f'({user}) not last_notification_time')
+            last_notification_time = habit_start
+            if now >= last_notification_time:
+                # print(f'({user}) now >= last_notification_time')
+                try:
+                    # Отправляем уведомление
+                    async_to_sync(send_message)(user.telegram_chat_id, message)
+                    print(f'({user}) SEND NOTIFICATION - {message}')
 
-        # Если текущее время больше или равно следующему уведомлению
-        if now >= notification_time - period:
+                    # Обновляем habit.last_notification_time
+                    habit.last_notification_time = habit_start
+                    # print(f'({user}) Обновляем habit.last_notification_time ({habit.last_notification_time})')
+
+                    # Рассчитываем следующее время уведомления
+                    next_notification_time = timezone.localtime(habit.last_notification_time) + period
+                    # print(f'({user}) Рассчитываем следующее время уведомления')
+
+                    # Если пропущено несколько уведомлений, корректируем next_notification_time
+                    while next_notification_time <= now:
+                        next_notification_time += period
+                        # print(f'({user}) Пропущено несколько уведомлений - корректируем next_notification_time')
+
+                    habit.next_notification_time = next_notification_time
+                    # print(f'({user}) habit.next_notification_time - {timezone.localtime(habit.next_notification_time)}')
+                    print(f'({user}) Время след. уведомления - {timezone.localtime(habit.next_notification_time)}')
+                    habit.save()
+                except TelegramForbiddenError:
+                    print(f'({user}) Не удалось отправить сообщение пользователю (TelegramForbiddenError)')
+            else:
+                pass
+                # print(f'({user}) now < last_notification_time')
+        else:
+            last_notification_time = timezone.localtime(habit.last_notification_time)
+        # print(f'({user}) last_notification_time = {last_notification_time}')
+
+        # Если next_notification_time еще не установлено или пропущено несколько уведомлений
+        if not habit.next_notification_time or timezone.localtime(habit.next_notification_time) >= now:
+            # print(f'({user}) not habit.next_notification_time or habit.next_notification_time >= now')
+            next_notification_time = last_notification_time + period
+            # print(f'({user}) next_notification_time = last_notification_time + period ({next_notification_time})')
+
+            # Проверяем, если следующее уведомление в прошлом, увеличиваем до актуального времени
+            while next_notification_time <= now:
+                next_notification_time += period
+                # print(f'({user}) Увеличиваем следующее уведомление до актуального времени')
+
+            habit.next_notification_time = next_notification_time
+            # print(f'({user}) habit.next_notification_time = next_notification_time ({timezone.localtime(habit.next_notification_time)})')
+            print(f'({user}) Время след. уведомления - {timezone.localtime(habit.next_notification_time)}')
+            habit.save()
+        else:
+            pass
+            # print(f'({user}) habit.next_notification_time >= now ({timezone.localtime(habit.next_notification_time)})')
+
+        # Проверяем, если текущее время больше или равно следующему времени уведомления
+        if now >= timezone.localtime(habit.next_notification_time):
+            # print(f'({user}) now >= habit.next_notification_time')
             try:
-                print(f'SEND {user} - {message}')
+                # Отправляем уведомление
                 async_to_sync(send_message)(user.telegram_chat_id, message)
+                print(f'({user}) SEND NOTIFICATION - {message}')
+
+                # Обновляем habit.last_notification_time
                 habit.last_notification_time = now
+                # print(f'({user}) Обновляем habit.last_notification_time ({habit.last_notification_time})')
+
+                # Рассчитываем следующее время уведомления
+                next_notification_time = timezone.localtime(habit.next_notification_time) + period
+                # print(f'({user}) Рассчитываем следующее время уведомления')
+
+                # Если пропущено несколько уведомлений, корректируем next_notification_time
+                while next_notification_time <= now:
+                    next_notification_time += period
+                    # print(f'({user}) Пропущено несколько уведомлений - корректируем next_notification_time')
+
+                habit.next_notification_time = next_notification_time
+                # print(f'({user}) habit.next_notification_time - {timezone.localtime(habit.next_notification_time)}')
+                print(f'({user}) Время след. уведомления - {timezone.localtime(habit.next_notification_time)}')
                 habit.save()
+
             except TelegramForbiddenError:
-                print(f'Не удалось отправить сообщение пользователю {user} (TelegramForbiddenError)')
-
-# @shared_task
-# def send_telegram_notification():
-#     print("Send")
-#     habits = Habit.objects.filter(status='active', user__telegram_chat_id__isnull=False)
-#
-#     for habit in habits:
-#         user = habit.user
-#         message = f"Напоминание! Ваша привычка {habit.action} ожидает выполнения!"
-#
-#         print(user)
-#         print(message)
-#
-#         asyncio.run(send_message(user.telegram_chat_id, message))
-
-# ----------------------------------------------------------------------------------------------------------------------
-
-# from celery import shared_task
-# from .models import Habit
-# import asyncio
-# from habits.telegram import send_message
-#
-#
-# @shared_task
-# def send_telegram_notification():
-#     print("Начало отправки уведомлений")
-#
-#     habits = Habit.objects.filter(status='active', user__telegram_chat_id__isnull=False)
-#
-#     async def send_notifications():
-#         tasks = []
-#         for habit in habits:
-#             user = habit.user
-#             message = f"Напоминание! Ваша привычка: {habit.action} ожидает выполнения!"
-#
-#             print(f"Отправка уведомления пользователю {user.username} ({user.telegram_chat_id}): {message}")
-#
-#             # Добавляем задачу для отправки сообщения в список
-#             tasks.append(send_message(user.telegram_chat_id, message))
-#
-#         # Выполняем все задачи параллельно
-#         await asyncio.gather(*tasks)
-#
-#     # Запускаем все асинхронные задачи
-#     asyncio.run(send_notifications())
-
-
-# @shared_task
-# def telegram_notification():
-#     current_time = datetime.datetime.now().replace(second=0, microsecond=0)
-#     current_time_plus_5 = current_time + datetime.timedelta(minutes=5)
-#
-#     habits = Habit.objects.filter(habit_is_pleasant=False)
-#
-#     for habit in habits:
-#         if str(habit.time) == str(current_time_plus_5.strftime("%X")):
-#             chat_id = habit.user.chat_id
-#             if chat_id:
-#                 count = habit.number_of_executions
-#                 if count != 0:
-#                     text_message = message_create(habit.pk)
-#                     send_tg(chat_id=chat_id, message=text_message)
-#                     count -= 1
-#                     habit.save()
-
-# @shared_task()
-# def telegram_notification():
-#     zone = pytz.timezone(settings.TIME_ZONE)
-#     current_time = datetime.now(zone)
-#     current_time_less = current_time - timedelta(minutes=5)
-#     habits = Habit.objects.filter(time__lte=current_time.time(), time__gte=current_time_less.time())
-#
-#     for habit in habits:
-#         user_tg = habit.user.tg_chat_id
-#         message = f"Я буду {habit.action} в {habit.time} в {habit.place}"
-#         send_telegram_message(user_tg, message)
+                print(f'({user}) Не удалось отправить сообщение пользователю (TelegramForbiddenError)')
+        else:
+            pass
+            # print(f'({user}) now < habit.next_notification_time')

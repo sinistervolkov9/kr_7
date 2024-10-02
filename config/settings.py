@@ -204,7 +204,7 @@ CELERY_TIMEZONE = TIME_ZONE
 CELERY_BEAT_SCHEDULE = {
     'habits-activator': {
         'task': 'habits.tasks.habits_activator',
-        'schedule': 45.0,  # проверка, что пора активировать
+        'schedule': 20.0,  # проверка, что пора активировать
     },
     'send-telegram_notification': {
         'task': 'habits.tasks.send_telegram_notification',
@@ -212,5 +212,4 @@ CELERY_BEAT_SCHEDULE = {
     },
 }
 
-TELEGRAM_URL = os.getenv("TELEGRAM_URL")
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
