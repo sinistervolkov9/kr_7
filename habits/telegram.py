@@ -23,11 +23,6 @@ async def start_command(message: types.Message):
     await message.reply("Привет! Я бот, интегрированный в Django через aiogram!")
 
 
-# async def send_message(chat_id: int, message: str):
-#     """Функция для отправки сообщения через бота."""
-#     await bot.send_message(chat_id=chat_id, text=message)
-
-
 async def send_message(chat_id, message):
     async with AiohttpSession() as session:
         bot = Bot(token=TELEGRAM_TOKEN, session=session)

@@ -12,22 +12,6 @@ class HabitViewSet(viewsets.ModelViewSet):
     pagination_class = HabitPaginator
     permission_classes = [IsAuthenticatedOrReadOnly, IsOwnerOrReadOnly]
 
-    # def get_permissions(self):
-    #     if self.action in ['list']:
-    #         permission_classes = [IsAuthenticatedOrReadOnly]
-    #     elif self.action in ['retrieve']:
-    #         permission_classes = [IsAuthenticatedOrReadOnly, IsPaymet]
-    #     elif self.action in ['update', 'partial_update']:
-    #         permission_classes = [IsAuthenticated, IsModerOrAuthor]
-    #     elif self.action == 'destroy':
-    #         permission_classes = [IsAuthenticated, IsModerOrAuthor]
-    #     elif self.action == 'create':
-    #         permission_classes = [IsAuthenticated, IsModerOrAuthor]
-    #     else:
-    #         permission_classes = [IsAuthenticated]
-    #
-    #     return [permission() for permission in permission_classes]
-
     def get_queryset(self):
         """
         Возвращает публичные привычки для всех пользователей и все привычки для их владельцев.

@@ -5,6 +5,8 @@ from .views import HabitViewSet, PublicHabitsListView
 router = DefaultRouter()
 router.register(r'habits', HabitViewSet)
 
+app_name = 'habits'
+
 urlpatterns = [
     path('', include(router.urls)),
     path('public/', PublicHabitsListView.as_view(), name='public_habits')
