@@ -30,8 +30,6 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/', include((router.urls, "api"), namespace='api')),
 
-    path('users/', include('users.urls')),
-    path('habits/', include('habits.urls')),
 
     re_path(r'^swagger(?P<format>\.json|\.yaml)$', schema_view.without_ui(cache_timeout=0),
             name='schema-json'),

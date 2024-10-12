@@ -11,6 +11,6 @@ router.register(r'users', UserViewSet, basename='user')
 
 urlpatterns = [
     path('register/', UserCreateAPIView.as_view(), name='register'),
-    path('login/', TokenObtainPairView.as_view(), name='login, get_token'),
+    path('login/', TokenObtainPairView.as_view(), name='login'),
     path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
 ]

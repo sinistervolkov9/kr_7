@@ -87,11 +87,14 @@ CSRF_COOKIE_SECURE = True
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.getenv('NAME'),
-        'USER': os.getenv('USER'),
-        'PASSWORD': os.getenv('PASSWORD'),
-        'HOST': os.getenv('HOST'),
+        'NAME': os.getenv('NAME', 'django_db'),
+        'USER': os.getenv('USER', 'django_user'),
+        'PASSWORD': os.getenv('PASSWORD', 'django_password'),
+        'HOST': os.getenv('DB_HOST', 'db'),
         'PORT': os.getenv('PORT'),
+        'OPTIONS': {
+            'client_encoding': 'UTF8',
+        },
     }
 }
 
